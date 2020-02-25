@@ -6,7 +6,7 @@ from . import Dream_shared_vars
 from .Dream import Dream, DreamPool
 from .model import Model
 import traceback
-
+import time
 
 def run_dream(parameters, likelihood, nchains=5, niterations=50000, start=None, restart=False, verbose=True, nverbose=10, tempering=False, mp_context=None, **kwargs):
     """Run DREAM given a set of parameters with priors and a likelihood function.
@@ -101,6 +101,8 @@ def _sample_dream(args):
         naccepts = 0
         naccepts100win = 0
         for iteration in range(iterations):
+            if iteration in np.floor(np.linspace(0,iterations,10)):
+                print("Status: ", iteration, "out of ", iterations, "at ", time.time())
             if iteration%nverbose == 0:
                 acceptance_rate = float(naccepts)/(iteration+1)
                 if verbose:
@@ -153,6 +155,8 @@ def _sample_dream_pt(nchains, niterations, step_instance, start, pool, verbose):
     ttestsper100 = 100./nchains
     
     for iteration in range(niterations):
+        if iteration in np.floor(np.linspace(0,iterations,10)):
+            print("Status: ", iteration, "out of ", iterations, "at ", time.time() )
         itidx = iteration*2
         if iteration%10 == 0:
             ttests = iteration/float(nchains)

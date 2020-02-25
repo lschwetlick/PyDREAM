@@ -20,3 +20,8 @@ pydream/examples/ndim_gaussian/*.mat
 
 #PyCharm files
 /.idea
+
+# MACOS
+.DS_Store
+/try*
+.python-version

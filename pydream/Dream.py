@@ -8,6 +8,7 @@ import traceback
 import multiprocessing as mp
 from multiprocessing import pool
 import time
+import warnings
 
 class Dream():
     """An implementation of the MT-DREAM\ :sub:`(ZS)`\  algorithm introduced in:
@@ -328,8 +329,14 @@ class Dream():
                     norm = np.linalg.norm(q0-z)
                     snooker_current_logp = np.log(norm, where=norm != 0)*(self.total_var_dimension-1)
                     total_old_logp = self.last_logp + snooker_current_logp
-                    
-                    q_new = metrop_select(np.nan_to_num(total_proposed_logp - total_old_logp), q, q0)
+
+                    # I added this because I like to run code with np.seterr(invalid='raise') and I think it's useful to have a better warning if my model returns only -Inf.
+                    if not np.isfinite(total_proposed_logp) and not np.isfinite(total_old_logp):
+                        warnings.warn("both total_proposed_logp and total_old_logp are infinite! Is your model returning sensible output?")
+                        q_new = metrop_select(np.nan_to_num(np.nan), q, q0)
+                    else:
+                        q_new = metrop_select(np.nan_to_num(total_proposed_logp - total_old_logp), q, q0)
+
                 else:
                     q_new = metrop_select(np.nan_to_num(q_logp) - np.nan_to_num(self.last_logp), q, q0)
                     

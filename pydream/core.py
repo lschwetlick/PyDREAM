@@ -88,21 +88,56 @@ def run_dream(parameters, likelihood, nchains=5, niterations=50000, start=None, 
 
 def _sample_dream(args):
 
-    try: 
+    try:
         dream_instance = args[0]
         iterations = args[1]
         start = args[2]
         verbose = args[3]
         nverbose = args[4]
         step_fxn = getattr(dream_instance, 'astep')
-        sampled_params = np.empty((iterations, dream_instance.total_var_dimension))
-        log_ps = np.empty((iterations, 1))
+        sampled_params = np.zeros((iterations, dream_instance.total_var_dimension))
+        log_ps = np.zeros((iterations, 1))
         q0 = start
         naccepts = 0
         naccepts100win = 0
+
+        i = 0
+        report_intervals = list(set(np.floor(np.hstack((np.linspace(1,iterations/400, 5), np.linspace(iterations/400,iterations, 10)))).astype(int)))
+        report_intervals.sort()
         for iteration in range(iterations):
-            if iteration in np.floor(np.linspace(0,iterations,10)):
-                print("Status: ", iteration, "out of ", iterations, "at ", time.time())
+            if iteration in report_intervals:
+                fname = dream_instance.model_name + "_status_chain" + str(dream_instance.chain_n) + ".txt"
+                try:
+                    with open(fname, 'r') as f:
+                        lines = f.readlines()
+                except:
+                    lines = []
+                with open(fname, 'a+') as f:
+                    if len(lines) > 0:
+                        last_line = lines[-1]
+                        prev_time = float(last_line.split("#")[1])
+                        secs = time.time() - prev_time
+                        iters = report_intervals[i] - report_intervals[i-1]
+                        iter_per_sec = iters / secs
+                        sec_per_iter = secs / iters
+                        eta = ((iterations-iteration)*(sec_per_iter))/60/60
+                    else:
+                        iters = "None"
+                        secs = "None"
+                        iter_per_sec = "None"
+                        sec_per_iter= "None"
+                        eta = "None"
+                    f.write("Status: " + str(iteration) + "out of " + str(iterations)
+                            + "at #" + str(time.time()) + "#; " + str(time.ctime())
+                            + " I am chain_n" + str(dream_instance.chain_n)
+                            + ". I ran " + str(iters) + " iters in " + str(secs) + " secs;"
+                            + " iter_per_sec: " + str(iter_per_sec)
+                            + "; sec_per_iter: " + str(sec_per_iter)
+                            + "; ETA: " + str(eta) + "hrs")
+                    f.write("\n")
+                np.save(dream_instance.model_name + "_i" + str(iteration) + "_ch" + str(dream_instance.chain_n) + ".npy", sampled_params)
+                i += 1
+
             if iteration%nverbose == 0:
                 acceptance_rate = float(naccepts)/(iteration+1)
                 if verbose:
@@ -122,7 +157,7 @@ def _sample_dream(args):
             if np.any(q0 != old_params):
                 naccepts += 1
                 naccepts100win += 1
-            
+
     except Exception as e:
         traceback.print_exc()
         print()
